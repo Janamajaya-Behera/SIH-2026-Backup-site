@@ -2,6 +2,7 @@ import { NextRequest } from "next/server";
 import { prisma } from "@/lib/db";
 import { ok, fail } from "@/lib/api";
 import { requireUser } from "@/lib/auth";
+export const dynamic = "force-dynamic";
 
 export async function GET(req: NextRequest) {
   try {
