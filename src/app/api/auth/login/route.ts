@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { ok, fail, ApiError } from "@/lib/api";
 import { verifyPassword, createSession } from "@/lib/auth";
+export const dynamic = "force-dynamic";
 
 export async function POST(req: NextRequest) {
   try {
