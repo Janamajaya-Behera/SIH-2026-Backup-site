@@ -1,0 +1,17 @@
+{
+  "name": "SafeGuard SOS",
+  "short_name": "SafeGuard",
+  "description": "Opt-in emergency response with donut geofencing and safe-witness model",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0f1e3c",
+  "theme_color": "#0f1e3c",
+  "icons": [
+    {
+      "src": "/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ]
+}

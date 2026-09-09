@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <rect width="64" height="64" rx="14" fill="#0f1e3c"/>
+  <path d="M32 8l18 7v14c0 12-7.6 21.5-18 27C21.6 50.5 14 41 14 29V15l18-7z" fill="#d93025"/>
+  <path d="M32 14l12 4.7V29c0 8.6-5.2 15.6-12 19.9C25.2 44.6 20 37.6 20 29v-10.3L32 14z" fill="#fff" opacity="0.14"/>
+  <text x="32" y="38" font-family="Arial, sans-serif" font-size="15" font-weight="bold" fill="#fff" text-anchor="middle">SOS</text>
+</svg>

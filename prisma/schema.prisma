@@ -1,0 +1,240 @@
+// SafeGuard SOS — Phase-1 data model
+// SQLite provider; enums are represented as string fields (SQLite has no native enums).
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// ───────────────────────────── User ─────────────────────────────
+
+model User {
+  id                 String   @id @default(cuid())
+  name               String
+  email              String   @unique
+  phone              String?
+  passwordHash       String
+  role               String   @default("VICTIM") // VICTIM | VOLUNTEER | POLICE | TEST_ATTACKER
+  isSimulated        Boolean  @default(false)
+  // Explicit opt-in consents (§7 privacy model)
+  consentLocation    Boolean  @default(false)
+  consentVolunteer   Boolean  @default(false)
+  // Volunteer lifecycle
+  volunteerStatus    String?  // ACTIVE | PAUSED
+  verificationStatus String   @default("UNVERIFIED") // UNVERIFIED | ID_VERIFIED | MEDICAL_CERTIFIED
+  certifications     String?  // JSON array of certification codes
+  // Voice SOS enrollment (Prototype / Simulated Speaker Verification)
+  wakePhraseHash     String?
+  speakerEnrollment  String?
+  // Anonymous node identity (§7 Node X)
+  anonId             String   @unique @default(cuid())
+  // Authorization condition timestamp for identity reveal
+  revealAuthorizedUntil DateTime?
+  createdAt          DateTime @default(now())
+
+  locations     Location[]
+  responses     VolunteerResponse[]
+  alerts        Alert[]
+  intelSent     IntelMessage[]
+  nodeFlags     NodeFlag[]
+  notifications Notification[]
+  incidents     Incident[] @relation("VictimIncidents")
+}
+
+// ───────────────────────────── Location ─────────────────────────────
+
+model Location {
+  id         String   @id @default(cuid())
+  userId     String
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  incidentId String?
+  lat        Float
+  lng        Float
+  accuracy   Float?
+  source     String   @default("GPS") // GPS | SIMULATED
+  createdAt  DateTime @default(now())
+
+  @@index([userId, createdAt])
+  @@index([incidentId])
+}
+
+// ───────────────────────────── Incident ─────────────────────────────
+
+model Incident {
+  id               String   @id @default(cuid())
+  victimId         String
+  victim           User     @relation("VictimIncidents", fields: [victimId], references: [id], onDelete: Cascade)
+  type             String   @default("GENERAL") // GENERAL | MEDICAL | CRIME | FIRE | OTHER
+  lat              Float
+  lng              Float
+  lastLat          Float
+  lastLng          Float
+  lastAccuracy     Float?
+  status           String   @default("COUNTDOWN") // COUNTDOWN | ACTIVE | CANCELLED | RESOLVED | CLOSED
+  cancelReason     String?
+  // Voice SOS metadata
+  voiceTriggered   Boolean  @default(false)
+  speakerVerified  Boolean  @default(false)
+  // Geofence configuration (locked boundaries §D)
+  dangerRadiusM    Int      @default(50)
+  helperZoneStartM Int      @default(100)
+  maxAlertRadiusM  Int      @default(2000)
+  // Lifecycle timestamps
+  countdownEndsAt  DateTime?
+  activatedAt      DateTime?
+  resolvedAt       DateTime?
+  closedAt         DateTime?
+  createdAt        DateTime @default(now())
+  // Clustering (§10 triage)
+  clusterId        String?
+  cluster          IncidentCluster? @relation(fields: [clusterId], references: [id], onDelete: SetNull)
+
+  responses  VolunteerResponse[]
+  alerts     Alert[]
+  intel      IntelMessage[]
+  auditEvents AuditEvent[]
+  evidence   EvidenceEvent[]
+  nodeFlags  NodeFlag[]
+
+  @@index([status])
+  @@index([victimId])
+}
+
+// ───────────────────────────── VolunteerResponse ─────────────────────────────
+
+model VolunteerResponse {
+  id          String   @id @default(cuid())
+  incidentId  String
+  incident    Incident @relation(fields: [incidentId], references: [id], onDelete: Cascade)
+  volunteerId String
+  volunteer   User     @relation(fields: [volunteerId], references: [id], onDelete: Cascade)
+  status      String   @default("RESPONDED") // RESPONDED | OBSERVING | WITHDRAWN
+  distanceM   Float?
+  zone        String?  // DANGER | BUFFER | HELPER | OUT_OF_RANGE
+  eligible    Boolean  @default(true)
+  flagged     Boolean  @default(false)
+  flagReason  String?
+  lat         Float?
+  lng         Float?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@unique([incidentId, volunteerId])
+}
+
+// ───────────────────────────── Alert ─────────────────────────────
+
+model Alert {
+  id         String   @id @default(cuid())
+  incidentId String
+  incident   Incident @relation(fields: [incidentId], references: [id], onDelete: Cascade)
+  userId     String
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  channel    String   @default("IN_APP") // IN_APP | SSE
+  status     String   @default("DELIVERED") // DELIVERED | READ | FAILED
+  distanceM  Float
+  zone       String   // HELPER (only helpers are alerted)
+  createdAt  DateTime @default(now())
+
+  @@unique([incidentId, userId])
+}
+
+// ───────────────────────────── IntelMessage ─────────────────────────────
+
+model IntelMessage {
+  id            String   @id @default(cuid())
+  incidentId    String
+  incident      Incident @relation(fields: [incidentId], references: [id], onDelete: Cascade)
+  senderId      String
+  sender        User     @relation(fields: [senderId], references: [id], onDelete: Cascade)
+  senderAnonId  String
+  category      String   // OBSERVED | MOVEMENT | DIRECTION | MEDICAL | FIRE | LOCATION_CHANGE | OTHER
+  message       String
+  lat           Float?
+  lng           Float?
+  createdAt     DateTime @default(now())
+
+  @@index([incidentId, createdAt])
+}
+
+// ───────────────────────────── IncidentCluster ─────────────────────────────
+
+model IncidentCluster {
+  id        String   @id @default(cuid())
+  centerLat Float
+  centerLng Float
+  radiusM   Float
+  status    String   @default("OPEN") // OPEN | MERGED | CLOSED
+  createdAt DateTime @default(now())
+  incidents Incident[]
+}
+
+// ───────────────────────────── AuditEvent ─────────────────────────────
+
+model AuditEvent {
+  id         String   @id @default(cuid())
+  incidentId String
+  incident   Incident @relation(fields: [incidentId], references: [id], onDelete: Cascade)
+  seq        Int
+  type       String // INCIDENT_CREATED | GPS_CAPTURED | COUNTDOWN_STARTED | INCIDENT_CANCELLED |
+                    // INCIDENT_ACTIVATED | VOLUNTEER_ALERTED | VOLUNTEER_ACCEPTED | VOLUNTEER_FLAGGED |
+                    // LOCATION_UPDATE | INTEL_MESSAGE | EVIDENCE_EVENT | POLICE_STATUS_CHANGE |
+                    // INCIDENT_RESOLVED | IDENTITY_REVEALED | ALERT_FAILED | ...
+  data       String // JSON payload
+  createdAt  DateTime @default(now())
+  prevHash   String
+  hash       String
+
+  @@unique([incidentId, seq])
+  @@index([incidentId, createdAt])
+}
+
+// ───────────────────────────── EvidenceEvent ─────────────────────────────
+
+model EvidenceEvent {
+  id         String   @id @default(cuid())
+  incidentId String
+  incident   Incident @relation(fields: [incidentId], references: [id], onDelete: Cascade)
+  type       String   // AUDIO | VIDEO | STATUS_CHANGE
+  status     String   @default("NOT_STARTED") // NOT_STARTED | ACTIVE | SIMULATED | STOPPED
+  reference  String?  // stream id / simulation metadata
+  startedAt  DateTime?
+  stoppedAt  DateTime?
+  createdAt  DateTime @default(now())
+}
+
+// ───────────────────────────── NodeFlag ─────────────────────────────
+
+model NodeFlag {
+  id         String   @id @default(cuid())
+  incidentId String
+  incident   Incident @relation(fields: [incidentId], references: [id], onDelete: Cascade)
+  userId     String
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  reason     String   // ENTERED_DANGER_ZONE | ...
+  lat        Float?
+  lng        Float?
+  flaggedAt  DateTime @default(now())
+
+  @@unique([incidentId, userId])
+}
+
+// ───────────────────────────── Notification ─────────────────────────────
+
+model Notification {
+  id         String   @id @default(cuid())
+  userId     String
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  incidentId String?
+  kind       String   @default("SYSTEM") // ALERT | INTEL | STATUS | SYSTEM
+  title      String
+  body       String
+  read       Boolean  @default(false)
+  createdAt  DateTime @default(now())
+
+  @@index([userId, createdAt])
+}

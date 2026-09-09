@@ -1,0 +1,57 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: dark;
+}
+
+html,
+body {
+  height: 100%;
+}
+
+/* Large touch targets and fast-tap on mobile (§21) */
+button,
+a {
+  touch-action: manipulation;
+}
+
+@layer components {
+  .card {
+    @apply rounded-xl border border-slate-800 bg-slate-900/60 p-4;
+  }
+  .btn {
+    @apply inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2.5 font-semibold transition-colors disabled:cursor-not-allowed disabled:opacity-50;
+  }
+  .btn-primary {
+    @apply btn bg-red-600 text-white hover:bg-red-500;
+  }
+  .btn-safe {
+    @apply btn bg-emerald-600 text-white hover:bg-emerald-500;
+  }
+  .btn-ghost {
+    @apply btn border border-slate-700 text-slate-200 hover:bg-slate-800;
+  }
+  .badge {
+    @apply inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold;
+  }
+  .input {
+    @apply w-full rounded-lg border border-slate-700 bg-slate-900 px-3 py-2.5 text-slate-100 placeholder-slate-500 focus:border-red-500 focus:outline-none;
+  }
+  .sim-watermark {
+    background-image: repeating-linear-gradient(
+      -45deg,
+      transparent,
+      transparent 18px,
+      rgba(245, 158, 11, 0.07) 18px,
+      rgba(245, 158, 11, 0.07) 36px
+    );
+  }
+}
+
+/* Thin scrollbars for dashboards */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: #334155 transparent;
+}
