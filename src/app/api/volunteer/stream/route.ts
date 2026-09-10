@@ -1,4 +1,5 @@
 export const dynamic = "force-dynamic";
+export const dynamic = "force-dynamic";
 
 import { NextRequest } from "next/server";
 import { requireUser } from "@/lib/auth";
