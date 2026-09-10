@@ -1,5 +1,4 @@
 export const dynamic = "force-dynamic";
-export const dynamic = "force-dynamic";
 
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
@@ -7,7 +6,6 @@ import { ok, fail, ApiError } from "@/lib/api";
 import { hashPassword, createSession } from "@/lib/auth";
 import { registerSchema } from "@/lib/validation";
 import { nanoid } from "nanoid";
-export const dynamic = "force-dynamic";
 
 export async function POST(req: NextRequest) {
   try {
